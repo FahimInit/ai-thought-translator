@@ -9,8 +9,6 @@ export default async function handler(req, res) {
   const { userQuery, systemPrompt } = req.body;
 
   // 3. Get the *secret* API key from Vercel's Environment Variables
-  //    This is safe and is never exposed to the user.
-  //    The name 'GEMINI_API_KEY' MUST match the name you set in Vercel.
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -18,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "API key is not configured." });
   }
   
-  // 4. This is the official Google API endpoint
+  // 4. Google API endpoint
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
   // 5. Construct the payload to send to Google

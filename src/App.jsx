@@ -2,34 +2,44 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BrainCircuit, Send, MessageSquareText, Loader2, Zap, LayoutGrid } from 'lucide-react';
 
 // --- Component: MessageBubble ---
-// This component displays a single chat message
 const MessageBubble = ({ message }) => {
   const isUser = message.role === 'user';
-  // Use different icons and styles based on who sent the message
   const roleIcon = isUser ? <Zap className="w-5 h-5 text-indigo-400" /> : <BrainCircuit className="w-5 h-5 text-yellow-400" />;
   const roleName = isUser ? 'You' : 'Translator';
 
   return (
-    <div className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-3xl flex items-start ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div
+      className={`flex w-full mb-6 ${isUser ? "justify-end" : "justify-start"}`}
+    >
+      <div
+        className={`max-w-3xl flex items-start ${
+          isUser ? "flex-row-reverse" : "flex-row"
+        }`}
+      >
         {/* Icon */}
-        <div className={`p-2 rounded-full ${isUser ? 'ml-3 bg-indigo-900' : 'mr-3 bg-yellow-900'} flex-shrink-0 shadow-lg`}>
+        <div
+          className={`p-2 rounded-full ${
+            isUser ? "ml-3 bg-indigo-900" : "mr-3 bg-yellow-900"
+          } flex-shrink-0 shadow-lg`}
+        >
           {roleIcon}
         </div>
         {/* Message Content */}
-        <div className={`p-4 rounded-xl shadow-xl ${
-          isUser 
-            ? 'bg-indigo-600/30 text-gray-100 rounded-tr-none border border-indigo-500/50' 
-            : 'bg-gray-800/60 text-gray-200 rounded-tl-none border border-gray-700'
-        }`}>
+        <div
+          className={`p-4 rounded-xl shadow-xl ${
+            isUser
+              ? "bg-indigo-600/30 text-gray-100 rounded-tr-none border border-indigo-500/50"
+              : "bg-gray-800/60 text-gray-200 rounded-tl-none border border-gray-700"
+          }`}
+        >
           <p className="font-semibold text-sm mb-1 opacity-70">{roleName}</p>
           {/* Render text with bolding (**) and newlines (\n) */}
-          <div 
+          <div
             className="text-base whitespace-pre-wrap"
-            dangerouslySetInnerHTML={{ 
+            dangerouslySetInnerHTML={{
               __html: message.content
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-                .replace(/\n/g, '<br />')
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                .replace(/\n/g, "<br />"),
             }}
           />
         </div>
@@ -39,7 +49,6 @@ const MessageBubble = ({ message }) => {
 };
 
 // --- Component: LandingPage ---
-// This is the homepage of the app
 const LandingPage = ({ startChat }) => {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-900">
@@ -68,17 +77,16 @@ const LandingPage = ({ startChat }) => {
 };
 
 // --- Component: ChatPage ---
-// This is the main chat interface
 const ChatPage = ({ messages, sendMessage, isLoading, goHome }) => {
   const [input, setInput] = useState('');
-  const messagesEndRef = useRef(null); // Used to auto-scroll to the bottom
+  const messagesEndRef = useRef(null);
 
   // Handle form submission
   const handleSend = (e) => {
     e.preventDefault();
     if (input.trim() === '' || isLoading) return;
     sendMessage(input);
-    setInput(''); // Clear input field
+    setInput('');
   };
 
   // Auto-scroll logic
@@ -151,7 +159,6 @@ const ChatPage = ({ messages, sendMessage, isLoading, goHome }) => {
 
 
 // --- Main App Component ---
-// This component manages the state and logic for the entire app
 export default function App() {
   // State to toggle between LandingPage and ChatPage
   const [isChatMode, setIsChatMode] = useState(false);
@@ -166,15 +173,14 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   
   // ==================================================================
-  // THIS IS THE SECURE, FRONTEND-ONLY API CALL FUNCTION
-  // It calls *your* backend (/api/translate), not Google's.
+  // API Handeler
   // ==================================================================
   const handleSendMessage = async (userInput) => {
     const newUserMessage = { role: 'user', content: userInput };
     setMessages((prev) => [...prev, newUserMessage]);
     setIsLoading(true);
     
-    // This is the beginner-friendly system prompt we created
+    // Beginner-friendly system prompt
     const systemPrompt = `You are the 'AI Thought Translator'. Your mission is to decode a user's raw, unclear, or incomplete thought and translate it into a clear, structured concept.
 
 **CRITICAL RULE: Your tone must be simple, clear, and beginner-friendly. Explain it like you would to a smart friend. Avoid all academic or business jargon.**
@@ -187,38 +193,28 @@ Your response MUST follow this exact 4-part structure using Markdown:
 4.  **Actionable Next Steps:** [Suggest 2-3 simple, practical next steps. Do not suggest complex frameworks like 'RACI Matrix' unless you explain it simply.]
 `;
     
-    // This is the user's query
+    // User's query
     const userQuery = `User's raw thought: "${userInput}"`;
 
     try {
-      // 1. Call YOUR backend, not Google's
+      // Call backend
       const response = await fetch('/api/translate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // 2. Send the prompts to your backend
           body: JSON.stringify({ userQuery, systemPrompt })
       });
 
-      // 3. This is the robust error handling for a Vercel function
       if (!response.ok) {
-        // We received an error (e.g., 500, 404, 401).
-        // We will try to read the error message as text first,
-        // as it might be an HTML error page from Vercel, not JSON.
         const errorText = await response.text();
-        
-        try {
-          // See if the error text is valid JSON (like we send from our backend)
+        try { 
           const errorData = JSON.parse(errorText);
-          // If it is, use the helpful error message from our API
           throw new Error(errorData.error || `API call failed with status: ${response.status}`);
         } catch (e) {
-          // If it's not JSON, it's a server crash.
-          // This will show "Vercel: Function timed out" or "API key not configured"
           throw new Error(errorText || `API call failed with status: ${response.status}`);
         }
       }
 
-      // 4. Get the same Gemini response back from your backend
+      // Get Gemini response
       const result = await response.json();
       
       if (!result.candidates || result.candidates.length === 0 || !result.candidates[0].content) {
@@ -230,7 +226,7 @@ Your response MUST follow this exact 4-part structure using Markdown:
 
     } catch (error) {
       console.error("API Call Error:", error);
-      // 5. Show a safe error message
+      // Show a safe error message
       setMessages((prev) => [...prev, { role: 'ai', content: `Sorry, I encountered an error: ${error.message}` }]);
     } finally {
       setIsLoading(false);
@@ -241,7 +237,7 @@ Your response MUST follow this exact 4-part structure using Markdown:
   // ==================================================================
 
   return (
-    // This is the main container for the app
+    // Main container for the app
     <div className="h-screen w-full bg-gray-900 font-sans">
       <style>{`
         /* Custom scrollbar styling for a darker theme */
